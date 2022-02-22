@@ -19,28 +19,23 @@ const (
 
 func main() {
 	router := gin.Default()
-	router.GET("/deck/:slug", deck)
+	router.GET("/deck", deck)
+	router.GET("/database", connect)
 	router.Run()
 	// connect()
 }
 
 func deck(c *gin.Context) {
-	slug := c.Param("slug")
-	c.JSON(http.StatusOK, gin.H{
-		"slug": slug,
-		"name": "Das kommt mir spanisch vor",
-	})
+	c.JSON(http.StatusOK, GetDeck())
 }
 
-func connect() {
+func connect(c *gin.Context) {
 	// connection string
 	psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
 	// open database
 	db, err := sql.Open("postgres", psqlconn)
 	CheckError(err)
-
-	GetData(db)
 
 	// close database
 	defer db.Close()
@@ -50,6 +45,10 @@ func connect() {
 	CheckError(err)
 
 	fmt.Println("Connected!")
+
+	response := GetData(db)
+
+	c.JSON(http.StatusOK, response)
 }
 
 func CheckError(err error) {
@@ -58,8 +57,10 @@ func CheckError(err error) {
 	}
 }
 
-func GetData(db *sql.DB) {
+func GetData(db *sql.DB) string {
 	fmt.Println("get data")
+
+	acc_string := ""
 
 	rows, err := db.Query(`SELECT "first_name", "last_name" FROM "users"`)
 	CheckError(err)
@@ -74,7 +75,30 @@ func GetData(db *sql.DB) {
 		CheckError(err)
 
 		fmt.Println(first_name, last_name)
+		acc_string += first_name
+		acc_string += last_name
 	}
 
 	CheckError(err)
+
+	return acc_string
+}
+
+func GetDeck() Deck {
+	return Deck{
+		"Das kommt mir spanisch vor",
+		[]Card{
+			{"fron", "back"},
+		},
+	}
+}
+
+type Card struct {
+	Front string
+	Back  string
+}
+
+type Deck struct {
+	Name  string
+	Cards []Card
 }
