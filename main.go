@@ -1,105 +1,99 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/heroku/x/hmetrics/onload"
 	_ "github.com/lib/pq"
 )
 
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "markus"
-	password = ""
-	dbname   = "markus"
-)
+func repeatHandler(r int) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var buffer bytes.Buffer
+		for i := 0; i < r; i++ {
+			buffer.WriteString("Hello from Go!\n")
+		}
+		c.String(http.StatusOK, buffer.String())
+	}
+}
+
+func dbFunc(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if _, err := db.Exec("CREATE TABLE IF NOT EXISTS ticks (tick timestamp)"); err != nil {
+			c.String(http.StatusInternalServerError,
+				fmt.Sprintf("Error creating database table: %q", err))
+			return
+		}
+
+		if _, err := db.Exec("INSERT INTO ticks VALUES (now())"); err != nil {
+			c.String(http.StatusInternalServerError,
+				fmt.Sprintf("Error incrementing tick: %q", err))
+			return
+		}
+
+		rows, err := db.Query("SELECT tick FROM ticks")
+		if err != nil {
+			c.String(http.StatusInternalServerError,
+				fmt.Sprintf("Error reading ticks: %q", err))
+			return
+		}
+
+		defer rows.Close()
+		for rows.Next() {
+			var tick time.Time
+			if err := rows.Scan(&tick); err != nil {
+				c.String(http.StatusInternalServerError,
+					fmt.Sprintf("Error scanning ticks: %q", err))
+				return
+			}
+			c.String(http.StatusOK, fmt.Sprintf("Read from DB: %s\n", tick.String()))
+		}
+	}
+}
 
 func main() {
-	router := gin.Default()
-	router.GET("/deck", deck)
-	router.GET("/database", connect)
-	router.Run()
-	// connect()
-}
+	port := os.Getenv("PORT")
 
-func deck(c *gin.Context) {
-	c.JSON(http.StatusOK, GetDeck())
-}
+	if port == "" {
+		log.Fatal("$PORT must be set")
+	}
 
-func connect(c *gin.Context) {
-	// connection string
-	psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
-
-	// open database
-	db, err := sql.Open("postgres", psqlconn)
-	CheckError(err)
-
-	// close database
-	defer db.Close()
-
-	// check db
-	err = db.Ping()
-	CheckError(err)
-
-	response := GetData(db)
-	fmt.Println("Connected!")
-
-	response += "connected..."
-
-	c.JSON(http.StatusOK, response)
-}
-
-func CheckError(err error) {
+	tStr := os.Getenv("REPEAT")
+	repeat, err := strconv.Atoi(tStr)
 	if err != nil {
-		panic(err)
-	}
-}
-
-func GetData(db *sql.DB) string {
-	fmt.Println("get data")
-
-	acc_string := ""
-
-	rows, err := db.Query(`SELECT "first_name", "last_name" FROM "users"`)
-	CheckError(err)
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var first_name string
-		var last_name string
-
-		err = rows.Scan(&first_name, &last_name)
-		CheckError(err)
-
-		fmt.Println(first_name, last_name)
-		acc_string += first_name
-		acc_string += last_name
+		log.Printf("Error converting $REPEAT to an int: %q - Using default\n", err)
+		repeat = 5
 	}
 
-	CheckError(err)
-
-	return acc_string
-}
-
-func GetDeck() Deck {
-	return Deck{
-		"Das kommt mir spanisch vor",
-		[]Card{
-			{"fron", "back"},
-		},
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatalf("Error opening database: %q", err)
 	}
-}
 
-type Card struct {
-	Front string
-	Back  string
-}
+	router := gin.New()
+	router.Use(gin.Logger())
+	// router.LoadHTMLGlob("templates/*.tmpl.html")
+	// router.Static("/static", "static")
 
-type Deck struct {
-	Name  string
-	Cards []Card
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "penis")
+	})
+
+	router.GET("/mark", func(c *gin.Context) {
+		c.String(http.StatusOK, "heyyyy") // string(blackfriday.Run([]byte("**hi!**")))
+	})
+
+	router.GET("/repeat", repeatHandler(repeat))
+
+	router.GET("/db", dbFunc(db))
+
+	router.Run(":" + port)
 }
