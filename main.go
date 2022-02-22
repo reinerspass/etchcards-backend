@@ -44,9 +44,10 @@ func connect(c *gin.Context) {
 	err = db.Ping()
 	CheckError(err)
 
+	response := GetData(db)
 	fmt.Println("Connected!")
 
-	response := GetData(db)
+	response += "connected..."
 
 	c.JSON(http.StatusOK, response)
 }
