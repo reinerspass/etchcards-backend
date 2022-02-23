@@ -25,6 +25,50 @@ func repeatHandler(r int) gin.HandlerFunc {
 	}
 }
 
+// {
+//     "decks": [
+//         {
+//             "id": 98475293847502934875,
+//             "name": "Des hört sich spanisch ah"
+//         },
+//         {
+//             "id": 98475293847502934875,
+//             "name": "Des hört sich französich ah"
+//         },
+//         {
+//             "id": 98475293847502934875,
+//             "name": "Des hört sich dütsch ah"
+//         },
+//         {
+//             "id": 98475293847502934875,
+//             "name": "Des hört sich englisch ah"
+//         }
+//     ]
+// }
+
+func deckMock(c *gin.Context) {
+	c.String(http.StatusOK, `{
+		"decks": [
+			{
+				"id": 98475293847502934875,
+				"name": "Des hört sich spanisch ah"
+			},
+			{
+				"id": 98475293847502934875,
+				"name": "Des hört sich französich ah"
+			},
+			{
+				"id": 98475293847502934875,
+				"name": "Des hört sich dütsch ah"
+			},
+			{
+				"id": 98475293847502934875,
+				"name": "Des hört sich englisch ah"
+			}
+		]
+	}`)
+}
+
 func dbFunc(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if _, err := db.Exec("CREATE TABLE IF NOT EXISTS ticks (tick timestamp)"); err != nil {
@@ -94,6 +138,8 @@ func main() {
 	router.GET("/repeat", repeatHandler(repeat))
 
 	router.GET("/db", dbFunc(db))
+
+	router.GET("/deck", deckMock)
 
 	router.Run(":" + port)
 }
