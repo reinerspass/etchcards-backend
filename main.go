@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,54 +13,23 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func repeatHandler(r int) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var buffer bytes.Buffer
-		for i := 0; i < r; i++ {
-			buffer.WriteString("Hello from Go!\n")
-		}
-		c.String(http.StatusOK, buffer.String())
-	}
-}
-
-// {
-//     "decks": [
-//         {
-//             "id": 98475293847502934875,
-//             "name": "Des hört sich spanisch ah"
-//         },
-//         {
-//             "id": 98475293847502934875,
-//             "name": "Des hört sich französich ah"
-//         },
-//         {
-//             "id": 98475293847502934875,
-//             "name": "Des hört sich dütsch ah"
-//         },
-//         {
-//             "id": 98475293847502934875,
-//             "name": "Des hört sich englisch ah"
-//         }
-//     ]
-// }
-
 func deckMock(c *gin.Context) {
 	c.String(http.StatusOK, `{
 		"decks": [
 			{
-				"id": 98475293847502934875,
+				"id": 1,
 				"name": "Des hört sich spanisch ah"
 			},
 			{
-				"id": 98475293847502934875,
+				"id": 2,
 				"name": "Des hört sich französich ah"
 			},
 			{
-				"id": 98475293847502934875,
+				"id": 3,
 				"name": "Des hört sich dütsch ah"
 			},
 			{
-				"id": 98475293847502934875,
+				"id": 4,
 				"name": "Des hört sich englisch ah"
 			}
 		]
@@ -110,13 +77,6 @@ func main() {
 		log.Fatal("$PORT must be set")
 	}
 
-	tStr := os.Getenv("REPEAT")
-	repeat, err := strconv.Atoi(tStr)
-	if err != nil {
-		log.Printf("Error converting $REPEAT to an int: %q - Using default\n", err)
-		repeat = 5
-	}
-
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatalf("Error opening database: %q", err)
@@ -124,18 +84,10 @@ func main() {
 
 	router := gin.New()
 	router.Use(gin.Logger())
-	// router.LoadHTMLGlob("templates/*.tmpl.html")
-	// router.Static("/static", "static")
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "penis")
 	})
-
-	router.GET("/mark", func(c *gin.Context) {
-		c.String(http.StatusOK, "heyyyy") // string(blackfriday.Run([]byte("**hi!**")))
-	})
-
-	router.GET("/repeat", repeatHandler(repeat))
 
 	router.GET("/db", dbFunc(db))
 
