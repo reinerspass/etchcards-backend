@@ -34,12 +34,9 @@ func LoadDecks() *Decks {
 	var decks Decks
 	for rows.Next() {
 		var deck Deck
-
 		if err := rows.Scan(&deck.Id, &deck.Name); err != nil {
 			log.Fatalf("error %q", err)
 		}
-		fmt.Printf("hat der gemacht lade deck mit name %s", deck.Name)
-
 		decks.Decks = append(decks.Decks, deck)
 	}
 
@@ -59,6 +56,21 @@ func LoadDeck(deckId int) *Deck {
 		return nil
 	}
 	return deck
+}
+
+func WriteDeck(deck Deck) int {
+	var deckId int
+
+	row := database.QueryRow(
+		`INSERT INTO deck(name)
+	 	 VALUES($1)
+		 RETURNING id;`, deck.Name)
+
+	if err := row.Scan(&deckId); err != nil {
+		log.Fatalf("error error error %q", err)
+	}
+
+	return deckId
 }
 
 func loadDeck(deckId int) *Deck {
