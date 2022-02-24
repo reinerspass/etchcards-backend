@@ -7,37 +7,6 @@ import (
 	"os"
 )
 
-type Deck struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-type Decks struct {
-	Decks []Deck `json:"decks"`
-}
-
-type Card struct {
-	Front Layer
-	Back  Layer
-}
-
-type Layer struct {
-	Items []Item
-}
-
-type ItemType byte
-
-const (
-	Title ItemType = iota
-	Description
-	Image
-)
-
-type Item struct {
-	Type    string
-	Content string
-}
-
 var database *sql.DB
 
 func Connect() {
@@ -55,15 +24,14 @@ func Initialize() {
 	}
 }
 
-func LoadDecks() Decks {
+func LoadDecks() *Decks {
 	rows, err := database.Query("SELECT id, name FROM deck")
 	if err != nil {
 		log.Fatal("unable to read decks: ", err)
 	}
-
 	defer rows.Close()
 
-	var decks []Deck
+	var decks Decks
 	for rows.Next() {
 		var deck Deck
 
@@ -72,30 +40,42 @@ func LoadDecks() Decks {
 		}
 		fmt.Printf("hat der gemacht lade deck mit name %s", deck.Name)
 
-		decks = append(decks, deck)
+		decks.Decks = append(decks.Decks, deck)
 	}
 
-	var decks2 Decks
-	decks2.Decks = decks
-	return decks2
+	return &decks
 }
 
-func LoadsCards(deckId int) []Card {
-	var cards []Card
+func LoadDeck(deckId int) *Deck {
+	// return nil
+	deck := loadDeck(deckId)
+	for _, cardId := range cardIdsForDeck(deckId) {
+		deck.Cards = append(deck.Cards, loadCard(cardId))
+	}
+	if deck == nil {
+		return nil
+	}
+	if len(deck.Cards) == 0 {
+		return nil
+	}
+	return deck
+}
 
-	cards = append(cards, loadCard(1))
+func loadDeck(deckId int) *Deck {
+	var deck Deck
+	row := database.QueryRow(`SELECT id, name FROM deck where deck.id=$1;`, deckId)
 
-	fmt.Println("karten karten karten", cards)
+	if err := row.Scan(&deck.Id, &deck.Name); err != nil {
+		log.Fatalf("error error error %q", err)
+	}
 
-	return cards
+	return &deck
 }
 
 func loadCard(cardId int) Card {
 	var card Card
-
 	card.Front = loadLayer(cardId, true)
 	card.Back = loadLayer(cardId, false)
-
 	return card
 }
 
@@ -145,7 +125,7 @@ func loadLayer(cardId int, front bool) Layer {
 	return layer
 }
 
-func loadCardIdsForDeck(deckId int) []int {
+func cardIdsForDeck(deckId int) []int {
 	var cardIds []int
 
 	rows, err := database.Query(

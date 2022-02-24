@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/reinerspass/waldego/internal"
@@ -95,11 +96,20 @@ func main() {
 		var decks = internal.LoadDecks()
 		c.JSON(http.StatusOK, decks)
 	})
-	router.GET("/deck", deckMock)
-	router.GET("/cards", func(c *gin.Context) {
-		var cards = internal.LoadsCards(1)
-		fmt.Printf("wasch da los", cards)
-		c.JSON(http.StatusOK, cards)
+	router.GET("/decks/:deck_id", func(c *gin.Context) {
+		var deck *internal.Deck
+		deck_id, err := strconv.Atoi(c.Param("deck_id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, "Internal Server Error")
+			return
+			// log.Fatal("unable to parse parameter: ", err)
+		}
+		deck = internal.LoadDeck(deck_id)
+		if deck == nil {
+			c.JSON(http.StatusNotFound, "404 Deck Not Found")
+		} else {
+			c.JSON(http.StatusOK, deck)
+		}
 	})
 
 	router.Run(":" + port)
