@@ -162,6 +162,62 @@ func cardIdsForDeck(deckId int) []int {
 	return cardIds
 }
 
+func WriteCard(deckId int, card Card) int {
+	frontLayerId := writeLayer()
+	backLayerId := writeLayer()
+	cardId := writeCard(deckId, frontLayerId, backLayerId)
+
+	for _, item := range card.Front.Items {
+		fmt.Println("inserting front item: ", item)
+		writeItem(item.Type, item.Content, frontLayerId)
+	}
+
+	for _, item := range card.Back.Items {
+		fmt.Println("inserting back item: ", item)
+		writeItem(item.Type, item.Content, backLayerId)
+	}
+
+	return cardId
+}
+
+func writeCard(deckId, frontLayerId, backLayerId int) int {
+	var cardId int
+	row := database.QueryRow(
+		`INSERT INTO card(deck_id, front_layer_id, back_layer_id)
+		VALUES($1, $2, $3)
+		RETURNING id;`,
+		deckId, frontLayerId, backLayerId)
+	if err := row.Scan(&cardId); err != nil {
+		log.Fatalf("Error writing Card %q", err)
+	}
+	return cardId
+}
+
+func writeLayer() int {
+	var layerId int
+	row := database.QueryRow(
+		`INSERT INTO layer 
+		VALUES(DEFAULT)
+		RETURNING id;`)
+	if err := row.Scan(&layerId); err != nil {
+		log.Fatalf("Error writing Layer %q", err)
+	}
+	return layerId
+}
+
+func writeItem(itemType string, content string, layerId int) int {
+	var itemId int
+	row := database.QueryRow(
+		`INSERT INTO item(type, content, layer_id)
+		VALUES($1, $2, $3)
+		RETURNING id;`,
+		itemType, content, layerId)
+	if err := row.Scan(&itemId); err != nil {
+		log.Fatalf("Error writing Item %q", err)
+	}
+	return itemId
+}
+
 func init_sql() string {
 	return `
 	-- RESET DATABASE

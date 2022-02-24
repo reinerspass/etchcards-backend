@@ -49,6 +49,25 @@ func main() {
 
 		c.JSON(http.StatusOK, gin.H{"status": "success", "deck_id": deckId})
 	})
+	router.POST("/decks/:deck_id/cards", func(c *gin.Context) {
+		var card internal.Card
+
+		deckId, err := strconv.Atoi(c.Param("deck_id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+
+		if err := c.BindJSON(&card); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		fmt.Println("received valid object? ", card)
+		var cardId = internal.WriteCard(deckId, card)
+
+		c.JSON(http.StatusOK, gin.H{"status": "success", "card_id": cardId})
+	})
 	router.GET("/decks/:deck_id", func(c *gin.Context) {
 		var deck *internal.Deck
 		deck_id, err := strconv.Atoi(c.Param("deck_id"))
