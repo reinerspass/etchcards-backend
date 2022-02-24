@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -27,12 +26,9 @@ func main() {
 	router.Use(logger)
 
 	router.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, "ha")
+		c.JSON(http.StatusOK, "🔪 ETCH CARDS")
 	})
-	router.GET("/test", func(c *gin.Context) {
-		internal.Initialize()
-		c.JSON(http.StatusOK, "ha")
-	})
+
 	router.GET("/decks", func(c *gin.Context) {
 		var decks = internal.LoadDecks()
 		c.JSON(http.StatusOK, decks)
@@ -43,45 +39,40 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
-		fmt.Println("received valid object? ", deck)
 		var deckId = internal.WriteDeck(deck)
-
 		c.JSON(http.StatusOK, gin.H{"status": "success", "deck_id": deckId})
 	})
-	router.POST("/decks/:deck_id/cards", func(c *gin.Context) {
-		var card internal.Card
 
+	router.GET("/decks/:deck_id", func(c *gin.Context) {
+		deckId, err := strconv.Atoi(c.Param("deck_id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+		deck := internal.LoadDeck(deckId)
+		if deck == nil {
+			c.JSON(http.StatusNotFound, "404 Deck Not Found")
+		} else {
+			c.JSON(http.StatusOK, deck)
+		}
+	})
+
+	router.POST("/decks/:deck_id/cards", func(c *gin.Context) {
 		deckId, err := strconv.Atoi(c.Param("deck_id"))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 
+		var card internal.Card
 		if err := c.BindJSON(&card); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		fmt.Println("received valid object? ", card)
 		var cardId = internal.WriteCard(deckId, card)
 
 		c.JSON(http.StatusOK, gin.H{"status": "success", "card_id": cardId})
-	})
-	router.GET("/decks/:deck_id", func(c *gin.Context) {
-		var deck *internal.Deck
-		deck_id, err := strconv.Atoi(c.Param("deck_id"))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, "Internal Server Error")
-			return
-			// log.Fatal("unable to parse parameter: ", err)
-		}
-		deck = internal.LoadDeck(deck_id)
-		if deck == nil {
-			c.JSON(http.StatusNotFound, "404 Deck Not Found")
-		} else {
-			c.JSON(http.StatusOK, deck)
-		}
 	})
 
 	router.Run(":" + port)
