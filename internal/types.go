@@ -15,6 +15,7 @@ type Cards struct {
 }
 
 type Card struct {
+	Id    int   `json:"id"`
 	Front Layer `json:"front"`
 	Back  Layer `json:"back"`
 }

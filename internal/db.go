@@ -103,6 +103,7 @@ func WriteDeck(deck Deck) int {
 
 func loadCard(cardId int) Card {
 	var card Card
+	card.Id = cardId
 	card.Front = loadLayer(cardId, true)
 	card.Back = loadLayer(cardId, false)
 	return card
