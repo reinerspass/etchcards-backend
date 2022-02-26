@@ -88,7 +88,8 @@ func cardIdsForDeck(deckId int) []int {
 
 func WriteDeck(deck Deck) int {
 	row := database.QueryRow(
-		`INSERT INTO deck(name)
+		`INSERT 
+		INTO deck(name)
 	 	VALUES($1)
 		RETURNING id;`,
 		deck.Name)
