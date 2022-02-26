@@ -11,7 +11,7 @@ var database *sql.DB
 func Connect() {
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatalf("Error opening database: %q", err)
+		log.Fatalf("Unhandled: Error opening database: %q", err)
 	}
 	database = db
 }
@@ -21,7 +21,7 @@ func LoadDecks() *Decks {
 		`SELECT id, name 
 		FROM deck`)
 	if err != nil {
-		log.Fatal("Unable to read decks: ", err)
+		log.Fatal("Unhandled: Unable to read decks: ", err)
 	}
 	defer rows.Close()
 
@@ -29,7 +29,7 @@ func LoadDecks() *Decks {
 	for rows.Next() {
 		var deck Deck
 		if err := rows.Scan(&deck.Id, &deck.Name); err != nil {
-			log.Fatalf("error %q", err)
+			log.Fatalf("Unhandled: error %q", err)
 		}
 		decks.Decks = append(decks.Decks, deck)
 	}
@@ -71,14 +71,14 @@ func cardIdsForDeck(deckId int) []int {
 		 WHERE card.deck_id=$1`,
 		deckId)
 	if err != nil {
-		log.Fatal("unable to load card ids: ", err)
+		log.Fatal("Unhandled: unable to load card ids: ", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var id int
 		if err := rows.Scan(&id); err != nil {
-			log.Fatalf("Unable to scan ID for Card %q", err)
+			log.Fatalf("Unhandled: Unable to scan ID for Card %q", err)
 		}
 		cardIds = append(cardIds, id)
 	}
@@ -95,7 +95,7 @@ func WriteDeck(deck Deck) int {
 		deck.Name)
 	var deckId int
 	if err := row.Scan(&deckId); err != nil {
-		log.Fatalf("Error writing Deck %q", err)
+		log.Fatalf("Unhandled: Error writing Deck %q", err)
 	}
 
 	return deckId
@@ -134,7 +134,7 @@ func loadLayer(cardId int, front bool) Layer {
 	rows, err := database.Query(
 		sql, cardId)
 	if err != nil {
-		log.Fatal("unable to load layer: ", err)
+		log.Fatal("Unhandled: Unable to load layer: ", err)
 	}
 	defer rows.Close()
 
@@ -142,7 +142,7 @@ func loadLayer(cardId int, front bool) Layer {
 	for rows.Next() {
 		var item Item
 		if err := rows.Scan(&item.Type, &item.Content); err != nil {
-			log.Fatalf("error %q", err)
+			log.Fatalf("Unhandled: error %q", err)
 		}
 		items = append(items, item)
 	}
@@ -172,7 +172,7 @@ func writeCard(deckId, frontLayerId, backLayerId int) int {
 		RETURNING id;`,
 		deckId, frontLayerId, backLayerId)
 	if err := row.Scan(&cardId); err != nil {
-		log.Fatalf("Error writing Card %q", err)
+		log.Fatalf("Unhandled: Error writing Card %q", err)
 	}
 	return cardId
 }
@@ -184,7 +184,7 @@ func writeLayer() int {
 		VALUES(DEFAULT)
 		RETURNING id;`)
 	if err := row.Scan(&layerId); err != nil {
-		log.Fatalf("Error writing Layer %q", err)
+		log.Fatalf("Unhandled: Error writing Layer %q", err)
 	}
 	return layerId
 }
@@ -197,7 +197,7 @@ func writeItem(itemType string, content string, layerId int) int {
 		RETURNING id;`,
 		itemType, content, layerId)
 	if err := row.Scan(&itemId); err != nil {
-		log.Fatalf("Error writing Item %q", err)
+		log.Fatalf("Unhandled: Error writing Item %q", err)
 	}
 	return itemId
 }
