@@ -101,6 +101,25 @@ func WriteDeck(deck Deck) int {
 	return deckId
 }
 
+func DeleteDeck(deckId int) {
+	for _, cardId := range cardIdsForDeck(deckId) {
+		DeleteCard(deckId, cardId)
+	}
+	deleteDeck(deckId)
+}
+
+func deleteDeck(deckId int) {
+	row := database.QueryRow(
+		`DELETE 
+		FROM deck 
+		WHERE id=$1
+		RETURNING id;`,
+		deckId)
+	if err := row.Scan(&deckId); err != nil {
+		log.Fatalf("Unhandled: Error deleting Deck %q", err)
+	}
+}
+
 func loadCard(cardId int) Card {
 	var card Card
 	card.Id = cardId

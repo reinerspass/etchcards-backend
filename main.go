@@ -57,6 +57,16 @@ func main() {
 		}
 	})
 
+	router.DELETE("/decks/:deck_id", func(c *gin.Context) {
+		deckId, err := strconv.Atoi(c.Param("deck_id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+		internal.DeleteDeck(deckId)
+		c.JSON(http.StatusOK, gin.H{"status": "success", "deck_id": deckId})
+	})
+
 	router.POST("/decks/:deck_id/cards", func(c *gin.Context) {
 		deckId, err := strconv.Atoi(c.Param("deck_id"))
 		if err != nil {
