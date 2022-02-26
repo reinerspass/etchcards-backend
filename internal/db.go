@@ -201,3 +201,32 @@ func writeItem(itemType string, content string, layerId int) int {
 	}
 	return itemId
 }
+
+func DeleteCard(deckId, cardId int) {
+	if !cardInDeck(deckId, cardId) {
+		log.Fatalf("Unhandled: card not contained in deck")
+		return
+	}
+	row := database.QueryRow(
+		`DELETE 
+		FROM card
+		CASCADE 
+		WHERE id=$1
+		RETURNING id;`,
+		cardId)
+	if err := row.Scan(&cardId); err != nil {
+		log.Fatalf("Unhandled: Error writing Deck %q", err)
+	}
+}
+
+func cardInDeck(deckId, cardId int) bool {
+	deck := LoadDeck(deckId)
+	cardInDeck := false
+	for _, card := range deck.Cards {
+		if cardId == card.Id {
+			cardInDeck = true
+			break
+		}
+	}
+	return cardInDeck
+}
